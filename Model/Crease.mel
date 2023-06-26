@@ -1,0 +1,18 @@
+proc crease()
+{
+    string $vtx[]=`ls -sl -fl`;
+    dR_modeObject;
+    string $obj[]=`ls -sl`;
+    select -r $vtx;
+    ConvertSelectionToContainedEdges;
+    string $edge[]=`ls -sl -fl`;
+    polyCrease -ch true -value 2 -vertexValue 2 $edge;
+    select -cl;
+    dR_modeObject;
+    select -r $obj[0];
+    makeIdentity -apply true -t 1 -r 1 -s 1 -n 0 -pn 1;
+    DeleteHistory;
+    
+}
+
+crease();

@@ -1,0 +1,14 @@
+{
+    $cube = `polyCube -name "plane" -w 1 -h 1 -d 1 -sx 2 -sy 2 -sz 1 -ax 0 1 0 -cuv 4 -ch 1`;
+    select -r ($cube[0]+ ".f[0:3]") ;
+    InvertSelection;
+    doDelete;
+    select $cube[0];
+    
+    setAttr ($cube[0] + ".translateZ") -0.5;
+    
+    select -r $cube[0];
+    CenterPivot;
+    DeleteHistory;
+    makeIdentity -apply true -t 1 -r 1 -s 1 -n 0 -pn 1;
+}

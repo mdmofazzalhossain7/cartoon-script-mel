@@ -1,0 +1,94 @@
+proc EdgeToOutline() {
+    string $selectedEdges[] = `ls -selection -flatten`;
+    $size  = `size($selectedEdges)`;
+    
+    if($size > 0){
+        proceed($selectedEdges);
+    } else {
+        print "\n\n\n\t\t\tYou might forget the procedure, here is a reminder...\n_________________________________________________________________________\n\n\tSTEP 1 : SELECT edges\n\tSTEP 2: CLICK on script, that's it\n_________________________________________________________________________\n\n\n";
+        warning "Could not find any selected edges";
+    }
+    
+    
+}
+
+EdgeToOutline();
+
+proc proceed(string $mySel[]) {
+    select -r $mySel;
+    dR_modeObject;
+    string $myOB[] =`ls -sl`;
+    string $name=$myOB[0];
+    
+    string $edge[];
+    string $onlyEdge[];
+    $i=0;
+    for($each in $mySel)
+    {
+        tokenize $each "." $edge;
+        $onlyEdge[$i++]= $edge[1];
+    }
+    
+    select -r $myOB;
+    duplicate -rc;
+    DeleteHistory;
+    string $copyOB[]=`ls -sl`;
+    string $copyOBshape[]=`listRelatives -s`;
+    dR_modeEdge;
+    select -cl;
+    for ($each in $onlyEdge)
+    {
+        select -add ($copyOBshape[0]+"."+$each);
+        
+    }
+
+    polyExtrudeEdge -tz -.005;
+    select `polyListComponentConversion -fe -tf` ;
+    InvertSelection;
+    Delete;
+    CenterPivot;
+        DeleteHistory;
+    dR_modeObject;
+    select -r $myOB;
+    DeleteHistory;
+    for ($shapeob in $copyOB){
+	string $shapeonly[]=`listRelatives -s $shapeob`;
+	select $shapeonly;
+    }
+    string $shape[]=`ls -sl -s`;
+
+    select -tgl $myOB;
+    parent -s -r;
+    select -r $copyOB;
+    delete;
+
+    select -r $shape;
+    select -r $shape;
+    rename ($name + "_line");
+    DeleteHistory;
+    AssignNewPfxToon;
+    string $pfx[]=`ls -sl`;
+    string $olname[]=`listRelatives -p`;
+    select -r $pfx[0];
+    setAttr ".lineWidth" 0.1;
+    setAttr ".displayPercent" 1;
+    setAttr ".overrideEnabled" 1;
+    setAttr ".overrideDisplayType" 2;
+    
+    connectAttr -f ($myOB[0]+".visibility") ($olname[0]+".visibility");
+
+    
+    
+
+    if (`objExists Outline`)
+    {
+    select -add Outline;
+    parent -a;
+    }
+    else
+    {
+    doGroup 0 1 1;
+    rename Outline; 
+    }
+    select -cl;
+}

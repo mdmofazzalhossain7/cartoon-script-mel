@@ -1,0 +1,16 @@
+{
+    $selectedEdges = `ls  -selection -flatten`;
+    maintainActiveChangeSelectMode $selectedEdges[0] 0;
+    $selectedObjects = `ls -selection`;
+    
+    $size = `size($selectedEdges)`;
+    
+    if($size > 0) {
+         
+         
+    } else {
+        print "\n\n\n\t\tYou might forget the procedure, here is a reminder\n________________________________________________________________________\n\n\tSTEP 1: SELECT edges\n\tSTEP 2: CLICK on script, that's it\n________________________________________________________________________\n\n";
+        warning "Object not specified";
+    }
+    
+}

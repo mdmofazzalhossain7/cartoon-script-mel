@@ -1,0 +1,15 @@
+{
+    $circle = `polyCylinder -name "circle" -r 1 -h 2 -sx 12 -sy 1 -sz 1 -ax 0 1 0 -rcp 0 -cuv 3 -ch 1`;
+    setAttr ($circle[0] + ".rotateX") 90;
+    select -r ($circle[0] + ".vtx[25]") ;
+    ConvertSelectionToFaces;
+    InvertSelection;
+    doDelete;
+    setAttr ($circle[0] + ".translateZ") -1;
+    
+    // Freeze and delete history
+    select -r $circle[0];
+    CenterPivot;
+    DeleteHistory;
+    makeIdentity -apply true -t 1 -r 1 -s 1 -n 0 -pn 1;
+}

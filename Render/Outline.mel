@@ -1,0 +1,40 @@
+proc outline(){
+    string $selectedObjects[] = `ls -selection -flatten`;
+    int $size = `size($selectedObjects)`;
+    
+    if($size > 0) {
+        proceed($selectedObjects);
+    } else {
+        warning "Select an object";
+    }
+}
+
+outline();
+
+proc proceed(string $objects[]) {
+    float $lineWidth = 0.05;
+    
+    for( $object in $objects ) {
+        select -r $object;
+        AssignNewPfxToon;
+        $outline = `ls -selection`;
+        setAttr ($outline[0] + ".lineWidth") $lineWidth;
+        
+        $outline = `listRelatives -p`;
+        if(`objExists "Outline"`) {
+            select -r $outline;
+            select -add "Outline";
+            parent;
+        } else {
+            select -cl;
+            doGroup 0 1 1;
+            $group = `ls -sl`;
+            rename $group[0] "Outline";
+            
+            
+            select -r $outline;
+            select -add "Outline";
+            parent;
+        }
+    }
+}

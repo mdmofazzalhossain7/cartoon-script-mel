@@ -1,0 +1,10 @@
+{
+    $selection = `ls -sl`;
+    $size = `size($selection)`;
+    if($size>0){
+        $shape = `listRelatives -shapes`;
+        $connection = `listConnections -c 1 -p 1 $shape`;
+        print $shape;
+        }
+    
+}

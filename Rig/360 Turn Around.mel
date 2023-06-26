@@ -1,0 +1,387 @@
+/*
+What's new?
+1. User can select dimension of turn around
+2. User can select and then define the character for rig
+*/
+
+int $rigOption;
+string $obSelection, $leftObjects[], $rightObjects[], $blendshapes[];
+string $buttons[] = { "Text", "Left", "Right", "Clear", "Image"};
+string $windowName = "rigFull";
+/*______________reseting everytime when this script is executed______________*/
+$rigOption=0;
+$obSelection = "";
+
+
+/*______________Updating text field name______________*/
+proc updateName()
+{
+global string $obSelection;
+string $sld[] = (`ls -sl`);
+$obSelection = $sld[0]; 
+
+/*______________Checking if the selection object is character root or not______________*/
+
+if(`gmatch $obSelection "*_Character"` == 0)
+{
+     warning "Make sure you select the right object";
+}
+else
+{
+    print ($obSelection + " is selected");
+}
+
+textField -edit -text $obSelection obName;
+}
+
+//window function
+proc menuWidget()
+{
+    
+    global string $obSelection, $windowName, $rigObjects[], $leftObjects[], $rightObjects[];
+    global int $rigOption;
+
+    clear $rigObjects;
+    clear $leftObjects;
+    clear $rightObjects;
+    
+    if(`window -exists $windowName`) deleteUI $windowName;
+    
+    window -title "Rigging your character" $windowName;
+    frameLayout -label "Select your dimension" -cll false;
+    
+    columnLayout -adj 1;
+    radioCollection;
+    separator -width 300 -height 10 -style "none";
+    rowColumnLayout  
+    -nc 3 
+    -cw 1 100 
+    -cw 2 100 
+    -cw 1 100 
+    -columnSpacing 1 25
+    ;
+    radioButton -label "360" -onCommand "global int $rigOption; $rigOption=1; " -changeCommand "selected360";
+    radioButton -label "90" -onCommand "global int $rigOption; $rigOption=2; selected360;" -changeCommand "selected180";
+    radioButton -label  "60" -onCommand "global int $rigOption; $rigOption=3; print $rigOption; selected360;" -changeCommand "selected90";
+    setParent..;
+    separator -style "in" -width 300 -height 20;
+    rowColumnLayout -numberOfColumns 3 -columnWidth 1 130 -cw 3 50 -columnSpacing 1 10 -columnWidth 2 100 -columnSpacing 2 10 -width 300 ;
+    textField -font "boldLabelFont" -text "No Object Selected" -editable false -width 85 obName;
+    button -label "Update Selection" -command "updateName()";
+    symbolButton -image "" ;
+    setParent..;
+    separator -style "in" -width 300 -height 20;
+    rowColumnLayout -numberOfColumns 1 -columnWidth 1 200 -columnSpacing 1 50;
+
+    
+    setParent..;
+    rowColumnLayout -height 1 -nc 5 -cw 1 50 -cw 2 50 -cw 3 50 -cw 4 50 -cs 1 10 -cs 2 20 -cs 3 5 -cs 4 5 -cs 5 10 editC;
+    
+    /* Quarter */
+    
+    text  -visible on 
+    -label "Quarter : " 
+    QuarterText;
+    
+    button  -visible on 
+    -label "Left" 
+    -command "global string $leftObjects[]; string $temp[]=`ls -sl`; $leftObjects[0]=$temp[0];  button -e -enable off QuarterLeft;"
+    QuarterLeft;
+    
+    button  -visible on 
+    -label "Right" 
+    -command "global string $rightObjects[]; string $temp[]=`ls -sl`; $rightObjects[0]=$temp[0]; button -e -enable off QuarterRight;"
+    QuarterRight; 
+    
+    button  
+    -visible on 
+    -label "Clear" 
+    -command " global string $leftObjects[], $rightObjects[]; $leftObjects[0] = \"\"; $rightObjects[0] = \"\"; button -e -enable on QuarterLeft; button -e -enable on QuarterRight;"
+    QuarterClear;
+    
+    symbolButton  
+    -visible on 
+    -image "error" 
+    QuarterImage;
+    
+    
+    /* Side */
+    
+    text  
+    -visible on 
+    -label "Side : " 
+    SideText;
+    
+    button  
+    -visible on 
+    -label "Left" 
+    -command "global string $leftObjects[]; string $temp[]=`ls -sl`; $leftObjects[1]=$temp[0]; button -e -enable off SideLeft;"
+    SideLeft;
+    
+    button  
+    -visible on 
+    -label "Right" 
+    -command "global string $rightObjects[]; string $temp[]=`ls -sl`; $rightObjects[1]=$temp[0]; button -e -enable off SideRight;"
+    SideRight;
+    
+    button  
+    -visible on 
+    -label "Clear" 
+    -command "global string $leftObjects[], $rightObjects[]; $leftObjects[1] = \"\"; $rightObjects[1] = \"\"; button -e -enable on SideLeft; button -e -enable on SideRight;"
+    SideClear;
+    
+    symbolButton  
+    -visible on 
+    -image "error" 
+    SideImage;
+    
+    /* Back Quarter */
+    
+    text 
+    -visible on  
+    -label "Back-Q:" 
+    BackQText;
+    
+    button  
+    -visible on 
+    -label "Left" 
+    -command "global string $leftObjects[]; string $temp[]=`ls -sl`; $leftObjects[2]=$temp[0]; button -e -enable off BackQLeft;"
+    BackQLeft;
+    
+    button  
+    -visible on 
+    -label "Right" 
+    -command "global string $rightObjects[]; string $temp[]=`ls -sl`; $rightObjects[2]=$temp[0]; button -e -enable off BackQRight;"
+    BackQRight;
+    
+    button  
+    -visible on 
+    -label "Clear" 
+    -command "global string $leftObjects[], $rightObjects[]; $leftObjects[2] = \"\"; $rightObjects[2] = \"\"; button -e -enable on BackQLeft; button -e -enable on BackQRight;"
+    BackQClear;
+    
+    symbolButton  
+    -visible on 
+    -image "error" 
+    BackQImage;
+    
+    /* Back */
+    
+    text 
+    -visible on 
+    -label "Back : " 
+    BackText;
+    
+    button 
+    -visible on  
+    -label "Left" 
+    -command "global string $leftObjects[]; string $temp[]=`ls -sl`; $leftObjects[3]=$temp[0]; button -e -enable off BackLeft;"
+    BackLeft;
+    
+    button  
+    -visible on 
+    -label "Right" 
+    -command "global string $rightObjects[]; string $temp[]=`ls -sl`; $rightObjects[3]=$temp[0]; button -e -enable off BackRight;"
+    BackRight;
+    
+    button  
+    -visible on 
+    -label "Clear" 
+    -command "global string $leftObjects[], $rightObjects[]; $leftObjects[3] = \"\"; $rightObjects[3] = \"\"; button -e -enable on BackLeft; button -e -enable on BackRight;"
+    BackClear;
+    
+    symbolButton  
+    -visible on 
+    -image "error" 
+    BackImage;
+    
+    setParent..;
+    separator -width 300 -height 15 -style "in";
+    rowColumnLayout -nc 3 -cw 1 100 -cw 2 100 -cw 3 100;
+    text "";
+    button -label "Proceed" -command "proceedRig" -width 10;
+    setParent..;
+    separator -width 300 -height 15 -style "in";
+    text -width 300 -label "� created by Md Mofazzal Hossain";
+     
+    showWindow rigFull;
+    window -e -widthHeight 300 220 $windowName;
+}
+
+proc selected90(){
+    string $btnName = "Quarter";
+    global string $buttons[], $windowName;
+    
+    window -edit -widthHeight 300 240 $windowName;
+    rowColumnLayout -edit -height 25 editC;
+    
+}
+
+proc selected180(){
+
+    string $btnName = "Side";
+    global string $buttons[], $windowName;
+    
+    window -edit -widthHeight 300 260 $windowName;
+    rowColumnLayout -edit -height 45 editC;
+}
+
+proc selected360(){
+    string $btnName = "BackQ";
+    global string $buttons[], $windowName;
+    
+    window -edit -widthHeight 300 320 $windowName;
+    rowColumnLayout -edit -height 100 editC;
+}
+
+menuWidget();
+
+/*````` AUTHENTICATION ``````*/
+
+proc proceedRig() {
+    global int $rigOption;
+    
+    switch($rigOption) {
+        case 1 : 
+            rig360();
+        break;
+        
+        case 2 : 
+            rig90();
+        break;
+        
+        case 3:
+            rig60();
+        break;
+        
+        default: 
+            error "Select dimension!";
+        break;
+        
+    }
+    
+}
+
+/*``````````R I G G I N G``````````````*/
+
+proc rig60 () {
+    global string $obSelection, $leftObjects[], $rightObjects[];
+    string $attributeName, $mainObjects[], $quarterObjects[];
+    int $i;
+    
+    $attributeName = "Turn";
+    
+    
+    createBlendshape($obSelection, $leftObjects[0], $obSelection, $attributeName, 0.0, -1.0);
+    createBlendshape($obSelection, $rightObjects[0], $obSelection, $attributeName, 0.0, 1.0);
+}
+
+proc rig90() {
+    global string $obSelection, $leftObjects[], $rightObjects[];
+    string $attributeName, $mainObjects[], $quarterObjects[];
+    int $i;
+    
+    $attributeName = "Turn";
+    
+    /*````` Left Hand Side `````*/
+    createBlendshape($obSelection, $leftObjects[0], $obSelection, $attributeName, 0.0, -1.0);
+    createBlendshape($obSelection, $leftObjects[1], $obSelection, $attributeName, -1.0, -2.0);
+    createBlendshape($leftObjects[0], $leftObjects[1], $obSelection, $attributeName, -1.0, -2.0);
+    
+    
+    /*````` Right Hand Side `````*/
+    createBlendshape($obSelection, $rightObjects[0], $obSelection, $attributeName, 0.0, 1.0);
+    createBlendshape($obSelection, $rightObjects[1], $obSelection, $attributeName, 1.0, 2.0);
+    createBlendshape($rightObjects[0], $rightObjects[1], $obSelection, $attributeName, 1.0, 2.0);
+
+}
+
+proc rig360() {
+    global string $obSelection, $leftObjects[], $rightObjects[];
+    string $attributeName, $mainObjects[], $quarterObjects[];
+    int $i;
+    
+    $attributeName = "Turn";
+    
+    /*````` Left Hand Side `````*/
+    createBlendshape($obSelection, $leftObjects[0], $obSelection, $attributeName, 0.0, -1.0);
+    createBlendshape($obSelection, $leftObjects[1], $obSelection, $attributeName, -1.0, -2.0);
+    createBlendshape($leftObjects[0], $leftObjects[1], $obSelection, $attributeName, -1.0, -2.0);
+    createBlendshape($obSelection, $leftObjects[2], $obSelection, $attributeName, -2.0, -3.0);
+    createBlendshape($leftObjects[1], $leftObjects[2], $obSelection, $attributeName, -2.0, -3.0);
+    createBlendshape($obSelection, $leftObjects[3], $obSelection, $attributeName, -3.0, -4.0);
+    createBlendshape($leftObjects[2], $leftObjects[3], $obSelection, $attributeName, -3.0, -4.0);
+    
+    
+    /*````` Right Hand Side `````*/
+    createBlendshape($obSelection, $rightObjects[0], $obSelection, $attributeName, 0.0, 1.0);
+    createBlendshape($obSelection, $rightObjects[1], $obSelection, $attributeName, 1.0, 2.0);
+    createBlendshape($rightObjects[0], $rightObjects[1], $obSelection, $attributeName, 1.0, 2.0);
+    createBlendshape($obSelection, $rightObjects[2], $obSelection, $attributeName, 2.0, 3.0);
+    createBlendshape($rightObjects[1], $rightObjects[2], $obSelection, $attributeName, 2.0, 3.0);
+    createBlendshape($obSelection, $rightObjects[3], $obSelection, $attributeName, 3.0, 4.0);
+    createBlendshape($rightObjects[2], $rightObjects[3], $obSelection, $attributeName, 3.0, 4.0);
+
+}
+
+/*``````````Utilities Procedure``````````*/
+
+
+proc createBlendshape(string $mainObject, string $blendObject, string $driver, string $attributeName, float $start, float $end) {
+    
+    global int $rigOption;
+    int $limit;
+
+    $i = 0;
+    $mainObjects=`listRelatives -c $mainObject`;
+    $childObjects=`listRelatives -c $blendObject`;
+    $drivers=`listRelatives -c $driver`;
+    $size = `size($mainObjects)`;
+    
+    for( $i=0; $i<$size; $i++){
+        
+        if(!`attributeExists $attributeName $drivers[$i]`)
+        {
+            int $min, $max;
+            switch($rigOption){
+                case 1: $min = -4; $max = 4;
+                break;
+                
+                case 2: $min = -2; $max = 2;
+                break;
+                
+                case 3: $min = -1; $max = 1;
+                break;
+            }
+            
+            addAttr -ln $attributeName  -at double  -min $min -max $max -dv 0 $drivers[$i];
+            setAttr -e-keyable true ($drivers[$i]+"."+$attributeName); 
+        }
+        else {
+            print "Attribute Exist!\n";
+            break;
+        }
+    }
+    
+    for( $i=0; $i<$size; $i++) {
+        
+        select -r $childObjects[$i];
+        select -add $mainObjects[$i];
+        $blendshapeName=`blendShape  -name ( $childObjects[$i] + "_blendshape")-automatic`;
+        
+        connectBlendshape(($drivers[$i]+"." + $attributeName), ($blendshapeName[0] + "." + $childObjects[$i]), $start, $end );
+        
+    }
+    
+}
+proc connectBlendshape(string $driver, string $driven, float $start, float $end) {
+    
+    setAttr $driver $start;
+    setAttr $driven 0;
+    setDrivenKeyframe  -currentDriver $driver $driven;
+    
+    
+    setAttr $driver $end;
+    setAttr $driven 1;
+    setDrivenKeyframe  -currentDriver $driver $driven;
+}

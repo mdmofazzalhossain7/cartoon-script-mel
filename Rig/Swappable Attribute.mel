@@ -1,0 +1,193 @@
+string $mainObject, $attributeName, $childObjects[];
+
+proc mainWindow() {
+    
+    string $windowName = "swapableTools";
+    
+    if(`window -exists $windowName`) deleteUI $windowName;
+    
+    window -title "Swappable Attribute Controller Tools" -toolbox yes $windowName;
+    
+    columnLayout;
+    
+    separator -height 5;
+    columnLayout -columnAttach "left" 255;
+    button -label "Reset" -command "reset";
+    setParent..;
+    
+    separator -height 15;
+    
+    rowColumnLayout -numberOfColumns 3 -columnSpacing 1 20 -columnSpacing 2 5 -columnSpacing 3 20 -rowSpacing 1 15;
+    
+    text -label "Attribute Name : ";
+    textField -editable on attrTextField;
+    button -label "Set" -command "setAttributeName" attrNameButton;
+    
+    text -label "Main Object : ";
+    textField -editable off mainObjectTextField;
+    button -enable false -label "Select" -command "mainObjectSelection" mainObjectButton;
+    
+    text -label "Child Objects : ";
+    textField -editable off childObjectTextField;
+    button -enable off -label "Select" -command "childrenObjectSelection" childObjectButton;
+    setParent..;
+    
+    separator -height 20;
+    
+    columnLayout -columnAttach "both" 50 -rowSpacing 10 -columnWidth 300;
+    button -enable false -label "Create Now" -command "createNow" CreateButton;
+    setParent..;
+       
+    setParent..;
+    showWindow $windowName;
+    window -edit -widthHeight 300 180 $windowName;
+    }
+
+mainWindow();
+
+proc setAttributeName() {
+    global string $attributeName;
+    $text =`textField -query -text attrTextField`;
+    
+    if($text == "") {
+        warning "Set an attribute name first";
+    } else {
+        $attributeName = $text;
+        button -edit -enable false attrNameButton;
+        button -edit -enable true mainObjectButton;
+        
+        print $attributeName;
+    }
+}
+
+proc mainObjectSelection() {
+    global string $mainObject;
+    
+    string $selection[] =`ls -sl`;
+    
+    if(`size($selection)`>0) {
+        $mainObject = $selection[0];
+    
+        textField -edit -text $mainObject mainObjectTextField;
+        button -edit -enable false mainObjectButton;
+        button -edit -enable on childObjectButton;
+        
+    } else {
+        warning "No object specified";
+    }
+    
+    
+}
+
+proc childrenObjectSelection() {
+    global string $mainObject, $childObjects[];
+    
+    select -deselect $mainObject;
+    string $selection[] = `ls -sl -fl`;
+    
+    $size = `size($selection)`;
+    
+    if($size>0) {
+        textField -edit -text $size childObjectTextField;
+        button -edit -enable false childObjectButton;
+        button -edit -enable true CreateButton;
+    
+        $childObjects = $selection;
+        
+        
+    } else {
+        warning "No object selected";
+    }
+    
+    
+}
+
+proc reset() {
+    button -edit -enable true mainObjectButton;
+    textField  -edit -text "" mainObjectTextField;
+    textField -edit -text "" childObjectTextField;
+}
+
+proc createNow() {
+    
+    global string $mainObject, $childObjects[];
+    
+    if(`size($mainObject)`>0 && `size($childObjects)`>0) {
+        process();
+    } else {
+        warning "Can not process...";
+    }
+    
+}
+
+proc process() {
+    global string $mainObject, $childObjects[];
+    
+    string $attrName, $optionName[], $options;
+    int $i, $size;
+    
+    $size = `size($childObjects)`;
+    $attrName = "Swap";
+    
+    float $pivot[] = `xform -query -worldSpace -pivots $mainObject`;
+    
+    move -worldSpace $pivot[0] $pivot[1] $pivot[2] $childObjects;
+    
+    
+    for($i = 0; $i<$size; $i++){
+        string $buffer[];
+        
+        tokenize $childObjects[$i] "_" $buffer;
+        
+        $last = `size($buffer)`- 1;
+        
+        $optionName[$i] = $buffer[$last];
+        
+        if( $i == $size - 1) {
+            $options += $buffer[$last] ;
+        } else {
+            $options += ($buffer[$last] + ":");
+        }
+    }
+    
+    
+    if(`attributeExists $attrName $mainObject`) {
+        addAttr -edit -enumName $options  $mainObject;
+    } else {
+        addAttr  -longName $attrName  -attributeType "enum" -enumName $options  $mainObject;
+    }
+    
+    
+    setAttr -e-keyable true ($mainObject + "." + $attrName);
+    
+    connectToAttribute($attrName,$optionName);
+    
+    select -r $mainObject;
+    
+}
+
+proc connectToAttribute(string $attribute, string $options[]) {
+    
+    global string $mainObject, $childObjects[];
+    int $i, $size;
+    
+    $size = `size($childObjects)`;
+    
+    for ($i = 0; $i<$size; $i++) {
+        setAttr ($mainObject + "." + $attribute) $i;
+        
+        for($each in $childObjects) {
+               setAttr ($each + ".visibility") 0;
+                setDrivenKeyframe -currentDriver ($mainObject + "." + $attribute) ($each + ".visibility");
+    
+        }
+        
+     }
+    
+    for($i = 0; $i<$size; $i++) {
+        setAttr ($mainObject + "." + $attribute) $i;
+        setAttr ($childObjects[$i] + ".visibility") 1;
+        
+        setDrivenKeyframe -currentDriver ($mainObject + "." + $attribute) ($childObjects[$i] + ".visibility");
+    }
+}

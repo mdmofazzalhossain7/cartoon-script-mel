@@ -1,0 +1,197 @@
+string $driverAttr;
+string $driver;
+string $drivenObjects[];
+string $drivenTrx[];
+
+proc menuUI(){
+    $windowName = "AttributeAnimation";
+    if(`window -exists "RecordAnimation"`) deleteUI "RecordAnimation";
+    if(`window -exists $windowName`) deleteUI $windowName;
+    
+    setChannelsLayersVisible( true );
+    
+    window -topLeftCorner 1 1 -toolbox on -menuBar true -title "Attribute Animation tool" $windowName;
+    menu -label "Help" -helpMenu true;
+    menuItem -label "About Application..." -command "print clicked";
+    columnLayout;
+    separator -style "none" -width 300 -height 20;
+    
+    rowColumnLayout  -numberOfColumns 3 -columnWidth 2 100  -columnWidth 1 20 -columnWidth 3 130 -columnSpacing 1 20;
+    image -visible false -image "MayaStartupDoneCheck" "driverState";
+    text -label "Attribute Name" -align "center";
+    button -label "Select Driver Attribute" -command "selectDriver()" "dvBtn";
+
+    separator -style "in" -width 280 -height 20;
+    setParent..;
+    
+    rowColumnLayout -numberOfColumns 2 -columnWidth 1 130 -columnWidth 2 130 -columnSpacing 1 10;
+    text -label "Select Driven";
+    button -label "Select Driven Objects" -command "selectDriven()";
+    setParent..;
+    
+    showWindow $windowName;
+    window -edit -topLeftCorner 300 1200 -widthHeight 300 150 $windowName;
+}
+
+menuUI();
+
+proc selectDriver(){
+    
+    global string $driverAttr;
+    global string $driver;
+    string $selectedObject[] = `ls -sl`;
+    string $selectedAttr[] = `channelBox -query -selectedMainAttributes "mainChannelBox"`;
+    
+    int $compare1 = `strcmp $selectedObject[0] ""`;
+    int $compare2 = `strcmp $selectedAttr[0] ""`;
+    
+    if($compare1==0){
+        warning "Driver objects not found";
+        //text  -edit -annotation "Driver not specified correctly" -label "X" -bgc 0.988 0.231 0.266 "dvTxt" ;
+    }
+    else if($compare2==0){
+        warning "Driver attribute not defined/selected";
+    }
+    else
+    {
+        image  -edit -visible true -image "MayaStartupDoneCheck" "driverState";
+        button  -edit -enable off "dvBtn";
+        print "Driver Selected";
+        setChannelsLayersVisible( false );
+        
+    $driver = $selectedObject[0];
+    $driverAttr = $selectedObject[0] + "." + $selectedAttr[0];
+    }
+}
+
+proc selectDriven(){
+    global string $driverAttr, $driver;
+    global string $drivenObjects[];
+    global string $drivenTrx[];
+    string $selectedObjects[] = `ls -sl -fl`;
+    
+    select -r $selectedObjects;
+    select -deselect $driver;
+    $selectedObjects = `ls -sl -fl`;
+    
+    int $size = `size($selectedObjects)`;
+    
+    if($size==0){
+        error "Driven object not specified";
+    }
+    else{
+    
+    for($each in $selectedObjects){
+        
+        if(!`gmatch $each "*_trx"`){
+        select -r $each;
+        string $parent[] = `listRelatives -parent`;
+        string $buffer[];
+        
+        tokenize $parent[0] "_" $buffer;
+        $lastIndex = `size($buffer)`-1;
+        
+        if(`size($parent)`==0 || `strcmp $buffer[$lastIndex] "trx"`!=0){
+            select -r $each;
+            doGroup 0 1 1;
+            rename ($each + "_trx");
+        }
+        }
+    }
+    
+    $drivenObjects = $selectedObjects;
+    select -r $drivenObjects;
+    string $tempParent[] = `listRelatives -parent`;
+    $drivenTrx = $tempParent;
+    
+    deleteUI "AttributeAnimation";
+    recordWindow();
+    }
+}
+
+proc recordWindow(){
+    
+    string $windowName = "RecordAnimation";
+    if(`window -exists $windowName`)deleteUI $windowName;
+    
+    window  -toolbox on -title "Record" $windowName;
+    columnLayout -adjustableColumn on -columnAlign "center";
+    separator -style "none" -height 10;
+    rowColumnLayout -nc 2 -cw 1 50 -cw 2 50 -cs 1 15 -cs 2 15;
+    button -bgc 0.5 1 0.5 -label "Driver" -command "btnSelectDriver";
+    button -bgc 1 1 0.5-label "Driven" -command "btnSelectDriven";
+    setParent..;
+    
+    separator -style "none" -height 10;
+    
+    columnLayout -adjustableColumn on -columnAlign "center";
+    button  -bgc 1 .5 .5 -label "Click to Record" -height 50 -command "recordAnimation()";
+    setParent..;
+    showWindow $windowName;
+    window -edit -topLeftCorner 300 800 -widthHeight 150 100 $windowName;
+}
+
+proc btnSelectDriver() {
+    global string $driver;
+    
+    select -r $driver;
+}
+
+proc btnSelectDriven() {
+    global string $drivenTrx[];
+    select -r $drivenTrx;
+}
+
+proc recordAnimation(){
+    
+    global string $driverAttr;
+    global string $drivenObjects[];
+    global string $drivenTrx[];
+    
+    print $drivenTrx;
+    
+    int $size = `size($drivenObjects)`;
+    int $i;
+    for($i=0; $i<$size; $i++)
+    {
+        
+        float $translation[] = `xform -query -translation -worldSpace $drivenObjects[$i]`;
+        float $rotation[] = `xform -query -rotation -worldSpace $drivenObjects[$i]`;
+        float $scale[] = `xform -query -scale -worldSpace $drivenObjects[$i]`;
+
+        setAttr ($drivenTrx[$i]+".visibility") 1;
+        setAttr ($drivenTrx[$i]+".translateX") $translation[0];
+        setAttr ($drivenTrx[$i]+".translateY") $translation[1];
+        setAttr ($drivenTrx[$i]+".translateZ") $translation[2];
+        setAttr ($drivenTrx[$i]+".rotateX") $rotation[0];
+        setAttr ($drivenTrx[$i]+".rotateY") $rotation[1];
+        setAttr ($drivenTrx[$i]+".rotateZ") $rotation[2];
+        setAttr ($drivenTrx[$i]+".scaleX") $scale[0];
+        setAttr ($drivenTrx[$i]+".scaleY") $scale[1];
+        setAttr ($drivenTrx[$i]+".scaleZ") $scale[2];
+
+
+        setDrivenKeyframe -currentDriver $driverAttr ($drivenTrx[$i] + ".visibility");
+        setDrivenKeyframe -currentDriver $driverAttr ($drivenTrx[$i] + ".translateX");
+        setDrivenKeyframe -currentDriver $driverAttr ($drivenTrx[$i] + ".translateY");
+        setDrivenKeyframe -currentDriver $driverAttr ($drivenTrx[$i] + ".translateZ");
+        setDrivenKeyframe -currentDriver $driverAttr ($drivenTrx[$i] + ".rotateX");
+        setDrivenKeyframe -currentDriver $driverAttr ($drivenTrx[$i] + ".rotateY");
+        setDrivenKeyframe -currentDriver $driverAttr ($drivenTrx[$i] + ".rotateZ");
+        setDrivenKeyframe -currentDriver $driverAttr ($drivenTrx[$i] + ".scaleX");
+        setDrivenKeyframe -currentDriver $driverAttr ($drivenTrx[$i] + ".scaleY");
+        setDrivenKeyframe -currentDriver $driverAttr ($drivenTrx[$i] + ".scaleZ");
+
+        setAttr ($drivenObjects[$i]+".visibility") 1;
+        setAttr ($drivenObjects[$i]+".translateX") 0;
+        setAttr ($drivenObjects[$i]+".translateY") 0;
+        setAttr ($drivenObjects[$i]+".translateZ") 0;
+        setAttr ($drivenObjects[$i]+".rotateX") 0;
+        setAttr ($drivenObjects[$i]+".rotateY") 0;
+        setAttr ($drivenObjects[$i]+".rotateZ") 0;
+        setAttr ($drivenObjects[$i]+".scaleX") 1;
+        setAttr ($drivenObjects[$i]+".scaleY") 1;
+        setAttr ($drivenObjects[$i]+".scaleZ") 1;
+    }
+    select -r $driverAttr;
+}

@@ -1,0 +1,226 @@
+string $windowName, $mainObject, $vertices[], $controllers[], $joints[], $tempCntrl[], $tempJoint;
+int $options;
+float $radius;
+
+clear $vertices;
+clear $controllers;
+
+$windowName = "VtxWithJointControllerWindow";
+
+proc mainWindow() {
+    global string $windowName;
+    
+    changeSelectMode -component;
+    selectType -polymeshVertex true;
+    previewControllerJoint();
+    
+    if(`window -exists $windowName`) deleteUI $windowName;
+    
+    window -toolbox on -title "Create Controller on Vartex" -cc "deleteTemps" $windowName;
+    
+    firstWindow();
+    
+    showWindow $windowName;
+    window -edit -widthHeight 200 200 $windowName;
+}
+
+proc firstWindow() {
+    columnLayout;
+    
+    separator -style "none" -height 20;
+    
+    rowColumnLayout -visible on -nc 3 -cs 1 10 -cs 2 10 optionFrameLayout;
+    radioCollection;
+    radioButton -label "With Rig" -onc "global int $options; $options = 1;";
+    radioButton -label "Without Rig" -onc "global int $options; $options = 2 ;";
+    setParent..;
+    
+    separator -style "in" -height 20;
+    
+    rowColumnLayout -visible on -nc 3 -cw 1 50 -cs 1 10 -cs 2 10 -cs 3 10;
+    text -label "Vertices : ";
+    text -width 50 -label "0" vtxCountTxt;
+    button -label "Select" -width 50 -command "addVartex";
+    setParent..;
+    
+    separator -style "in" -height 20;
+    
+    rowColumnLayout -visible on -nc 3 -cw 1 50 -cs 1 10 -cs 2 10 -cs 3 10 createControllerLayout;
+    text -label "Radius : ";
+    floatField -value 1 -width 50 -ec "setRadius" radisuField;
+    button -label "set" -width 50 -command "setRadius";
+    setParent..;
+    
+    separator -style "in" -height 20;
+    
+    rowColumnLayout -visible on -nc 1 -cs 1 50 controllerJointRadiusLayout;
+    button -label "Create" -width 100 -command "authOptions";
+    setParent..;
+    
+    setParent..;
+}
+
+proc addVartex() {
+    global string $vertices[], $mainObject;
+    
+    clear $vertices;
+    
+    $selected=`ls -sl -fl`;
+    
+    dR_modeObject;
+    
+    $selectedObject = `ls -sl`;
+    
+    $mainObject = $selectedObject[0];
+    
+    $vertices=$selected;
+    
+    $count = `size($vertices)`;
+    
+    text -edit -label $count vtxCountTxt;
+    
+    select -cl;
+}
+
+proc previewControllerJoint() {
+    
+    global string $tempCntrl[], $tempJoint;
+    
+    dR_modeObject;
+    
+    $p=`xform -q -ws -scalePivot front`;
+    
+    $tempCntrl=`circle -nrz 90`;
+    move -ws $p[0] $p[1] 100;
+    select -cl;
+    $tempJoint=`joint -p $p[0] $p[1] 100`;
+    select -cl;
+}
+
+proc setRadius() {
+    global string $tempCntrl[], $tempJoint;
+    global float $radius;
+    
+    $radius=`floatField -q -v radisuField`;
+    
+    setAttr ( $tempCntrl[1] + ".radius") $radius;
+    setAttr ($tempJoint +".radius") $radius;
+}
+
+proc deleteTemps() {
+    global string $tempCntrl[], $tempJoint;
+    select -cl;
+    
+    if(`objExists $tempJoint`){
+        select -r $tempJoint;
+        if(`objExists $tempCntrl[0]`){
+            select -add $tempCntrl[0];
+        }
+        delete;
+    }
+}
+
+mainWindow();
+
+proc authOptions() {
+    global string $vertices[];
+    global int $options;
+    global float $radius;
+    
+    deleteTemps();
+    
+    if($radius>0 && `size($vertices)`>0) {
+    
+    switch($options){
+        case 1: 
+            createControllers();
+            createJoints();
+            connectSkinbind();
+        break;
+        
+        case 2: 
+            createControllers();
+            createJoints();
+        break;
+        
+        default: 
+            error "Select an option";
+        break;   
+    }
+    
+    } else {
+        error "Vartex or Radius not specified";
+    } 
+}
+
+proc createControllers() {
+    global string $vertices[], $controllers[], $mainObject;
+    global float $radius;
+    
+    int $i = 0;
+    
+    for( $i=0; $i<`size($vertices)`; $i++) {
+        
+        $position = `xform -query -worldSpace -translation $vertices[$i]`;
+        
+        $tmpCircle=`circle -name ($mainObject + "_cntrl") -nrz 90 -radius $radius`;
+        
+        $controllers[$i] = $tmpCircle[0];
+        
+        move -rpr $position[0] $position[1] $position[2];
+        move -r 0 0 1;
+        }
+        
+        print $controllers;
+        /*
+        select -r $controllers;
+        doGroup 0 1 1;
+        rename ($mainObject + "_cntrl_grp");
+        CenterPivot;*/
+        select -cl;
+}
+
+proc createJoints() {
+    global string $vertices[], $controllers[], $joints[], $mainObject;
+    global float $radius;
+    
+    clear $joints;
+    
+    int $i = 0;
+    
+    for( $i=0; $i<`size($vertices)`; $i++) {
+        
+        $position = `xform -query -worldSpace -translation $vertices[$i]`;
+        
+        $tmpJoint=`joint -name ($mainObject + "_joint" + $i) -radius $radius`;
+        
+        $joints[$i] =  $tmpJoint;
+        
+        move -rpr $position[0] $position[1] $position[2];
+        
+        select -cl;
+        
+        select -r $joints[$i];
+        select -add $controllers[$i];
+        
+        parent;
+        
+        select -cl;
+        
+        }
+        
+        select -r $controllers;
+        doGroup 0 1 1;
+        rename ($mainObject + "_cntrls");
+        select -cl;
+}
+
+proc connectSkinbind() {
+    global string $joints[], $mainObject;
+    
+    select -r $joints;
+    select -add $mainObject;
+    newSkinCluster "-toSelectedBones -bindMethod 0  -normalizeWeights 1 -weightDistribution 1 -mi 5 -omi true -dr 4 -rui true  , multipleBindPose, 1";
+    select -cl;
+    
+}

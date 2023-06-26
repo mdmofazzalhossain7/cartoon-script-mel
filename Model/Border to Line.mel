@@ -1,0 +1,58 @@
+proc line()
+{
+    string $sel[]=`ls -sl`;
+    ConvertSelectionToEdges;
+    string $edges[]=`ls -sl -fl`;
+    
+    $size=size($edges) - 1;
+    
+    
+    select -r $edges[$size];
+    InvertSelection;
+    string $newsel[]=`ls -sl -fl`;
+    string $ex[]=`polyExtrudeEdge -constructionHistory 1 -keepFacesTogether 1 -pvx -5.114617825 -pvy 1.47445327 -pvz 0 -divisions 1 -twist 0 -taper 1 -offset 0 -thickness 0 -smoothingAngle 30 $newsel`;
+    setAttr ($ex[0]+".localTranslateZ") 0.01;
+    select -r ($sel[0]+".f[0]") ;
+    doDelete;
+    select -r $sel[0];
+    displaySmoothness -divisionsU 3 -divisionsV 3 -pointsWire 16 -pointsShaded 4 -polygonObject 3;
+    makeIdentity -apply true -t 1 -r 1 -s 1 -n 0 -pn 1;
+    DeleteHistory;
+    CenterPivot;
+    rename ($sel[0]+"_line");
+    Outline();
+    
+    
+}
+line();
+
+proc Outline()
+{
+	
+	AssignNewPfxToon;
+	string $shape[]=`ls -sl`;
+    string $olname[]=`listRelatives -p`;
+	select -r $shape[0];
+	setAttr ".lineWidth" 0.02;
+    setAttr ".occlusionWidthScale" 0;
+    setAttr ".borderWidthModulation" 0;
+    setAttr ".displayPercent" 1;
+    setAttr ".overrideEnabled" 1;
+    setAttr ".overrideDisplayType" 2;
+    select -r $olname[0];
+	if (`objExists Outline`)
+    {
+    select -add Outline;
+    parent -s;
+    }
+    else
+    {
+    doGroup 0 1 1;
+    rename Outline; 
+	}
+	
+	select -r `listRelatives -p`;
+	reorder -back;
+	select -cl;
+	}
+	
